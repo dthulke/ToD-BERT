@@ -20,23 +20,26 @@ from models.BERT_DST_Picklist import *
 from models.dual_encoder_ranking import *
 
 # hugging face models
-from transformers import *
+from transformers import AutoModel, AutoConfig, AutoTokenizer
 
 try:
     from torch.utils.tensorboard import SummaryWriter
 except ImportError:
     from tensorboardX import SummaryWriter
-    
-## model selection
-MODELS = {"bert": (BertModel,       BertTokenizer,       BertConfig),
-          "todbert": (BertModel,       BertTokenizer,       BertConfig),
-          "gpt2": (GPT2Model,       GPT2Tokenizer,       GPT2Config),
-          "todgpt2": (GPT2Model,       GPT2Tokenizer,       GPT2Config),
-          "dialogpt": (AutoModelWithLMHead, AutoTokenizer, GPT2Config),
-          "albert": (AlbertModel, AlbertTokenizer, AlbertConfig),
-          "roberta": (RobertaModel, RobertaTokenizer, RobertaConfig),
-          "distilbert": (DistilBertModel, DistilBertTokenizer, DistilBertConfig),
-          "electra": (ElectraModel, ElectraTokenizer, ElectraConfig)}
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """ Special json encoder for numpy types """
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return json.JSONEncoder.default(self, obj)
+
+
 
 ## Fix torch random seed
 if args["fix_rand_seed"]: 
@@ -55,7 +58,7 @@ args["unified_meta"] = unified_meta
 
 ## Create vocab and model class
 args["model_type"] = args["model_type"].lower()
-model_class, tokenizer_class, config_class = MODELS[args["model_type"]]
+model_class, tokenizer_class, config_class = AutoModel, AutoTokenizer, AutoConfig
 tokenizer = tokenizer_class.from_pretrained(args["model_name_or_path"], cache_dir=args["cache_dir"])
 args["model_class"] = model_class
 args["tokenizer"] = tokenizer
@@ -192,7 +195,8 @@ if args["do_train"]:
                 model.load_state_dict(torch.load(output_model_file))
             else:
                 model.load_state_dict(torch.load(output_model_file, lambda storage, loc: storage))
-        
+        model.eval()
+
         ## Run test set evaluation
         pbar = tqdm(tst_loader)
         for nb_eval in range(args["nb_evals"]):
@@ -209,6 +213,10 @@ if args["do_train"]:
             results = model.evaluation(preds, labels)
             result_runs.append(results)
             logging.info("[{}] Test Results: ".format(nb_eval) + str(results))
+            with open(os.path.join(output_dir_origin, f"result_scores_{nb_eval}.json"), 'wt') as fp:
+                json.dump(results, fp, cls=NumpyEncoder)
+            with open(os.path.join(output_dir_origin, f"result_preds_{nb_eval}.json"), 'wt') as fp:
+                json.dump(list(zip(preds, labels)), fp, cls=NumpyEncoder)
     
     ## Average results over runs
     if args["nb_runs"] > 1:

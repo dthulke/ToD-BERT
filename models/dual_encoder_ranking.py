@@ -11,7 +11,7 @@ from sklearn.metrics import f1_score #, average_precision_score
 import numpy as np
 
 
-from transformers import *
+from transformers import AdamW
 
 
 class dual_encoder_ranking(nn.Module):

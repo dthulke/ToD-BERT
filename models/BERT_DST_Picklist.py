@@ -1,14 +1,11 @@
-import os.path
 import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from torch.nn import CrossEntropyLoss
-from torch.nn import CosineEmbeddingLoss
 import numpy as np
 
-from transformers import *
+from transformers import AdamW
 
 def _gelu(x):
     """ Original Implementation of the gelu activation function in Google Bert repo when initialy created.
@@ -83,8 +80,8 @@ class BeliefTracker(nn.Module):
         if self.args["gate_supervision_for_dst"]:
             self.gate_classifier = nn.Linear(self.bert_output_dim, 2)
             
-        self.start_token = self.tokenizer.cls_token if "bert" in self.args["model_type"] else self.tokenizer.bos_token
-        self.sep_token = self.tokenizer.sep_token if "bert" in self.args["model_type"] else self.tokenizer.eos_token
+        self.start_token = self.tokenizer.cls_token if self.tokenizer.cls_token is not None else self.tokenizer.bos_token
+        self.sep_token = self.tokenizer.sep_token if self.tokenizer.sep_token is not None else self.tokenizer.eos_token
         
         ## Prepare Optimizer
         def get_optimizer_grouped_parameters(model):

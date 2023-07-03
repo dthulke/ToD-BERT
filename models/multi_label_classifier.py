@@ -1,17 +1,11 @@
-import os.path
-import math
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
-from torch import optim
 
-from torch.nn import CrossEntropyLoss
-from torch.nn import CosineEmbeddingLoss
 from sklearn.metrics import f1_score #, average_precision_score
 import numpy as np
 
 
-from transformers import *
+from transformers import AdamW
 
 
 class multi_label_classifier(nn.Module):
