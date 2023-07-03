@@ -47,6 +47,8 @@ parser.add_argument(
 parser.add_argument(
     '--fix_encoder', action='store_true', help="")
 parser.add_argument(
+    '--pooling_method', help='', required=False, default=None, type=str)
+parser.add_argument(
     '--model_type', help='', required=False, default="bert", type=str)
 parser.add_argument(
     '--model_name_or_path', help='', required=False, default="bert", type=str)

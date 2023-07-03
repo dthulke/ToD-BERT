@@ -85,6 +85,14 @@ class multi_class_classifier(nn.Module):
                         inputs["input_ids"],
                         attention_mask=(inputs["input_ids"] > 0).long())[0]
                     hidden_head = transformer_outputs.mean(1)
+                elif self.args["pooling_method"] == "pooler_output":
+                    hidden_head = model_output = self.utterance_encoder(**inputs).pooler_output
+                elif self.args["pooling_method"] == "mean":
+                    model_output = self.utterance_encoder(**inputs)
+                    attention_mask = inputs['attention_mask']
+                    token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+                    input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+                    hidden_head = torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
                 else:
                     hidden = self.utterance_encoder(**inputs)[0]
                     hidden_head = hidden[:, 0, :]
@@ -97,6 +105,14 @@ class multi_class_classifier(nn.Module):
                     inputs["input_ids"],
                     attention_mask=(inputs["input_ids"] > 0).long())[0]
                 hidden_head = transformer_outputs.mean(1)
+            elif self.args["pooling_method"] == "pooler_output":
+                hidden_head = model_output = self.utterance_encoder(**inputs).pooler_output
+            elif self.args["pooling_method"] == "mean":
+                model_output = self.utterance_encoder(**inputs)
+                attention_mask = inputs['attention_mask']
+                token_embeddings = model_output[0] #First element of model_output contains all token embeddings
+                input_mask_expanded = attention_mask.unsqueeze(-1).expand(token_embeddings.size()).float()
+                hidden_head = torch.sum(token_embeddings * input_mask_expanded, 1) / torch.clamp(input_mask_expanded.sum(1), min=1e-9)
             else:
                 hidden = self.utterance_encoder(**inputs)[0]
                 hidden_head = hidden[:, 0, :]
